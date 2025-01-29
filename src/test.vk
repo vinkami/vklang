@@ -4,4 +4,11 @@ while (x <= 10) {
     t *= x
     print(t)
     x += 1
+    ? (x == 7) {
+        break
+    } |? ( x == 3 ) {
+        print("y")
+    } | {
+        print("x")
+    }
 }

@@ -4,6 +4,9 @@ import vklang.interpret.Referables
 fun main() {
     val script = Script("src/test.vk")
     val ref = Referables({s: String -> println(s)})
-    script.interpret(ref)
-//    println(script.parse())
+    val err = script.interpret(ref)
+    if (err != null) {
+        println(err)
+        println(script.parse())
+    }
 }
