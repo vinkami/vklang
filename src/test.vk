@@ -1,0 +1,7 @@
+var x = 1
+var t = 1
+while (x <= 10) {
+    t *= x
+    print(t)
+    x += 1
+}
