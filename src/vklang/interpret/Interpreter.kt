@@ -117,7 +117,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             return InterpretResult(NullObj(node.startPos, node.endPos))
 
         } else {
-            // Normal caluclation
+            // Normal calculation
             val left = interpretNoInterrupt(node.left, ref).obj
             val right = interpretNoInterrupt(node.right, ref).obj
 
