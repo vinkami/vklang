@@ -15,13 +15,13 @@ internal object Constant {
         POWER,
     )
 
-    val comparitiveOp: List<TokenType> = listOf(
+    val comparativeOp: List<TokenType> = listOf(
         EQUAL, NOT_EQUAL,
         LESS, LESS_EQUAL,
         GREATER, GREATER_EQUAL,
     )
 
-    val difinitiveOp: List<TokenType> = listOf(
+    val definitiveOp: List<TokenType> = listOf(
         ASSIGN,
 //        TokenType.INCREMENT, TokenType.DECREMENT,
         PLUS_ASSIGN, MINUS_ASSIGN,
@@ -33,7 +33,7 @@ internal object Constant {
         AND, OR, NOT,
     )
 
-    val binaryOps: List<TokenType> = arithmeticOp + comparitiveOp + difinitiveOp + logicalOp - listOf(NOT)
+    val binaryOps: List<TokenType> = arithmeticOp + comparativeOp + definitiveOp + logicalOp - listOf(NOT)
 
     val bracket: Map<TokenType, TokenType> = mapOf(
         L_PARAN to R_PARAN,

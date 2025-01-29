@@ -92,7 +92,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpretBinOp(node: BinOpNode, ref: Referables): InterpretResult {
-        if (node.op.type in Constant.difinitiveOp) {
+        if (node.op.type in Constant.definitiveOp) {
             // Variable assignment
             if (node.left !is IdenNode) throw SyntaxError("Invalid assignment", node.startPos, node.endPos)
             val name = node.left.name
