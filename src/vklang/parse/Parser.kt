@@ -71,7 +71,7 @@ class Parser(private val tokens: List<Token>) {
             PLUS, MINUS, NOT -> parseUnaryOp()
             VAR, VAL -> parseAssign()
             in Constant.bracket.keys -> parseBracket()
-            IF -> parseIf()
+            IF, QUESTION -> parseIf()
             WHILE, FOR -> parseLoop()
             BREAK, RETURN -> parseInterrupt()
             FUNC -> parseFuncDef()
@@ -295,8 +295,8 @@ class Parser(private val tokens: List<Token>) {
         }
 
         var elseAction: BaseNode? = null
-        if (currentType == ELSE) {
-            ass()
+        if (nextType == ELSE || nextType == OR) {
+            ass(2)
             elseAction = parseBracket()
             endPos = currentEndPos
         }

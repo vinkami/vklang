@@ -53,6 +53,7 @@ internal object Constant {
         "." to DOT,
         ":" to COLON,
         ";" to SEMICOLON,
+        "?" to QUESTION,
 
         // Arithmetic operator
         "+" to PLUS,
@@ -149,6 +150,8 @@ internal object Constant {
 
         Pair(SPACE, SPACE) to Pair(SPACE) { t1, t2 -> t1.value + t2.value },
         Pair(LINEBREAK, LINEBREAK) to Pair(LINEBREAK) { t1, t2 -> t1.value + t2.value },
+
+        Pair(OR, QUESTION) to Pair(ELIF) { _, _ -> "|?" },
     )
 
     val loopCompleteTT: List<TokenType> = listOf(

@@ -3,7 +3,7 @@ package vklang.lex
 enum class TokenType {
     // Key char
     L_PARAN, R_PARAN, L_BRAC, R_BRAC, L_BRACE, R_BRACE,
-    COMMA, DOT, COLON, SEMICOLON,
+    COMMA, DOT, COLON, SEMICOLON, QUESTION,
 
     // Operator
     PLUS, MINUS, MULTIPLY, DIVIDE, POWER, MODULO,
