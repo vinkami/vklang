@@ -283,17 +283,15 @@ class Parser(private val tokens: List<Token>) {
         val mainAction = parseBracket()
         var endPos = currentEndPos
 
-        ass()
         val elif = mutableMapOf<BaseNode, BaseNode>()
-        while (currentType == ELIF) {
-            ass()
+        while (nextType == ELIF) {
+            ass(2)
             val cond = parseBracket()
             ass()
             val action = parseBracket()
 
             endPos = currentEndPos
             elif[cond] = action
-            ass()
         }
 
         var elseAction: BaseNode? = null
