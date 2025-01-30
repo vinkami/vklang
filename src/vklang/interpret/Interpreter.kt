@@ -10,18 +10,18 @@ import vklang.lex.Token
 import vklang.lex.TokenType.*
 import vklang.parse.node.*
 
-class Interpreter(private val globalNode: BaseNode, private val globalRef: Referables) {
+class Interpreter(private val globalNode: BaseNode, private val globalst: SymbolTable) {
     fun interpret(): BaseError? {
         try {
-            interpret(globalNode, globalRef)
+            interpret(globalNode, globalst)
         } catch (e: BaseError) {
             return e
         }
         return null
     }
 
-    private fun interpretNoInterrupt(node: BaseNode, ref: Referables): InterpretResult {
-        val res = interpret(node, ref)
+    private fun interpretNoInterrupt(node: BaseNode, st: SymbolTable): InterpretResult {
+        val res = interpret(node, st)
 
         if (res.hasInterrupt) {
             throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos)
@@ -30,28 +30,28 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         return res
     }
 
-    private fun interpret(node: BaseNode, ref: Referables): InterpretResult {
+    private fun interpret(node: BaseNode, st: SymbolTable): InterpretResult {
         node::class.simpleName ?: return InterpretResult(UnknownNodeError(node))
 
         var res: InterpretResult = when (node) {
             is NumberNode -> interpretNumber(node)
             is StringNode -> InterpretResult(StringObj(node.value, node.startPos, node.endPos))
             is BoolNode -> InterpretResult(BoolObj(node.token.type == TRUE, node.startPos, node.endPos))
-            is BinOpNode -> interpretBinOp(node, ref)
-            is UnaryOpNode -> interpretUnaryOp(node, ref)
-            is IdenNode -> interpretIden(node, ref)
-            is AssignNode -> interpretAssign(node, ref)
-            is ListNode -> interpretList(node, ref)
-            is DictNode -> interpretDict(node, ref)
-            is BracketNode -> interpretBracket(node, ref)
+            is BinOpNode -> interpretBinOp(node, st)
+            is UnaryOpNode -> interpretUnaryOp(node, st)
+            is IdenNode -> interpretIden(node, st)
+            is AssignNode -> interpretAssign(node, st)
+            is ListNode -> interpretList(node, st)
+            is DictNode -> interpretDict(node, st)
+            is BracketNode -> interpretBracket(node, st)
             is NullNode -> InterpretResult(NullObj(node.startPos, node.endPos))
-            is IfNode -> interpretIf(node, ref)
-            is LoopNode -> interpretLoop(node, ref)
-            is InterruptNode -> interpretInterrupt(node, ref)
-            is ProcedureNode -> interpretProcedural(node, ref)
-            is FuncNode -> interpretFuncCreation(node, ref)
-            is ClassNode -> interpretClassCreation(node, ref)
-            is PropAccessNode -> interpretPropAccess(node, ref)
+            is IfNode -> interpretIf(node, st)
+            is LoopNode -> interpretLoop(node, st)
+            is InterruptNode -> interpretInterrupt(node, st)
+            is ProcedureNode -> interpretProcedural(node, st)
+            is FuncNode -> interpretFuncCreation(node, st)
+            is ClassNode -> interpretClassCreation(node, st)
+            is PropAccessNode -> interpretPropAccess(node, st)
 
             is ArgumentsNode -> throw NotYourFaultError("ArgumentsNode should not be interpreted", node.startPos, node.endPos)
             else -> throw UnknownNodeError(node)
@@ -60,14 +60,14 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         if (node.call != null) {
             val args = node.call!!.args
             val kwargs = node.call!!.kwargs
-            val localRef = ref.bornChild()
+            val localst = st.bornChild()
             val startPos = node.startPos
             val endPos = node.endPos
 
             res = when (res.obj) {
-                is FuncObj -> interpretFunc((res.obj as FuncObj).node, args, kwargs, localRef, startPos, endPos)
-                is BuiltinFunc -> interpretBultinFunc(res.obj as BuiltinFunc, args, kwargs, localRef, startPos, endPos)
-                is ClassObj -> interpretClass((res.obj as ClassObj).node, args, kwargs, localRef, startPos, endPos)
+                is FuncObj -> interpretFunc((res.obj as FuncObj).node, args, kwargs, localst, startPos, endPos)
+                is BuiltinFunc -> interpretBultinFunc(res.obj as BuiltinFunc, args, kwargs, localst, startPos, endPos)
+                is ClassObj -> interpretClass((res.obj as ClassObj).node, args, kwargs, localst, startPos, endPos)
                 else -> throw TypeError("${res.obj::class.simpleName} is not callable", startPos, endPos)
             }
         }
@@ -75,9 +75,9 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         return res
     }
 
-    private fun interpretInterrupt(node: InterruptNode, ref: Referables): InterpretResult {
+    private fun interpretInterrupt(node: InterruptNode, st: SymbolTable): InterpretResult {
         val interrupt = node.type
-        val obj = interpretNoInterrupt(node.innerNode, ref).obj
+        val obj = interpretNoInterrupt(node.innerNode, st).obj
         return InterpretResult(obj, interrupt)
     }
 
@@ -91,23 +91,23 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         }
     }
 
-    private fun interpretBinOp(node: BinOpNode, ref: Referables): InterpretResult {
+    private fun interpretBinOp(node: BinOpNode, st: SymbolTable): InterpretResult {
         if (node.op.type in Constant.definitiveOp) {
             // Variable assignment
             if (node.left !is IdenNode) throw SyntaxError("Invalid assignment", node.startPos, node.endPos)
             val name = node.left.name
-            val value = interpretNoInterrupt(node.right, ref).obj
+            val value = interpretNoInterrupt(node.right, st).obj
             val ogValue =
-                ref.get(name) ?: throw NameError("Unknown variable $name", node.left.startPos, node.left.endPos)
+                st.get(name) ?: throw NameError("Unknown variable $name", node.left.startPos, node.left.endPos)
 
             when (node.op.type) {
-                ASSIGN -> ref.reassign(name, value)
-                PLUS_ASSIGN -> ref.reassign(name, ogValue.plus(value))
-                MINUS_ASSIGN -> ref.reassign(name, ogValue.minus(value))
-                MULTIPLY_ASSIGN -> ref.reassign(name, ogValue.times(value))
-                DIVIDE_ASSIGN -> ref.reassign(name, ogValue.divide(value))
-                MODULO_ASSIGN -> ref.reassign(name, ogValue.mod(value))
-                POWER_ASSIGN -> ref.reassign(name, ogValue.power(value))
+                ASSIGN -> st.reassign(name, value)
+                PLUS_ASSIGN -> st.reassign(name, ogValue.plus(value))
+                MINUS_ASSIGN -> st.reassign(name, ogValue.minus(value))
+                MULTIPLY_ASSIGN -> st.reassign(name, ogValue.times(value))
+                DIVIDE_ASSIGN -> st.reassign(name, ogValue.divide(value))
+                MODULO_ASSIGN -> st.reassign(name, ogValue.mod(value))
+                POWER_ASSIGN -> st.reassign(name, ogValue.power(value))
                 else -> throw NotYourFaultError(
                     "Invalid assignment operator ${node.op.type}",
                     node.op.startPos,
@@ -118,8 +118,8 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
         } else {
             // Normal calculation
-            val left = interpretNoInterrupt(node.left, ref).obj
-            val right = interpretNoInterrupt(node.right, ref).obj
+            val left = interpretNoInterrupt(node.left, st).obj
+            val right = interpretNoInterrupt(node.right, st).obj
 
             val obj = when (node.op.type) {
                 PLUS -> left.plus(right)
@@ -146,8 +146,8 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         }
     }
 
-    private fun interpretUnaryOp(node: UnaryOpNode, ref: Referables): InterpretResult {
-        val innerObj = interpretNoInterrupt(node.innerNode, ref).obj
+    private fun interpretUnaryOp(node: UnaryOpNode, st: SymbolTable): InterpretResult {
+        val innerObj = interpretNoInterrupt(node.innerNode, st).obj
 
         val obj =  when (node.op.type) {
             PLUS -> innerObj.unaryPlus()
@@ -159,70 +159,70 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         return InterpretResult(obj)
     }
 
-    private fun interpretIden(node: IdenNode, ref: Referables): InterpretResult {
-        return InterpretResult(ref.get(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos))
+    private fun interpretIden(node: IdenNode, st: SymbolTable): InterpretResult {
+        return InterpretResult(st.get(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos))
     }
 
-    private fun interpretAssign(node: AssignNode, ref: Referables): InterpretResult {
-        val value = interpretNoInterrupt(node.value, ref).obj
+    private fun interpretAssign(node: AssignNode, st: SymbolTable): InterpretResult {
+        val value = interpretNoInterrupt(node.value, st).obj
 
-        ref.set(node.iden.name, value, node.mutable)
+        st.set(node.iden.name, value, node.mutable)
         return InterpretResult(NullObj(node.startPos, node.endPos))
     }
 
-    private fun interpretList(node: ListNode, ref: Referables): InterpretResult {
+    private fun interpretList(node: ListNode, st: SymbolTable): InterpretResult {
         val list = mutableListOf<BaseObject>()
         for (item in node.nodes) {
-            list.add(interpretNoInterrupt(item, ref).obj)
+            list.add(interpretNoInterrupt(item, st).obj)
         }
         return InterpretResult(ListObj(list, node.startPos, node.endPos))
     }
 
-    private fun interpretDict(node: DictNode, ref: Referables): InterpretResult {
+    private fun interpretDict(node: DictNode, st: SymbolTable): InterpretResult {
         val dict = mutableMapOf<BaseObject, BaseObject>()
         for ((key, value) in node.dict) {
-            dict[StringObj(key.value, key.startPos, key.endPos)] = interpretNoInterrupt(value, ref).obj
+            dict[StringObj(key.value, key.startPos, key.endPos)] = interpretNoInterrupt(value, st).obj
         }
         return InterpretResult(DictObj(dict, node.startPos, node.endPos))
     }
 
-    private fun interpretBracket(node: BracketNode, ref: Referables): InterpretResult {
-        return interpret(node.innerNode, ref)
+    private fun interpretBracket(node: BracketNode, st: SymbolTable): InterpretResult {
+        return interpret(node.innerNode, st)
     }
 
-    private fun interpretIf(node: IfNode, ref: Referables): InterpretResult {
-        val localRef = ref.bornChild()
+    private fun interpretIf(node: IfNode, st: SymbolTable): InterpretResult {
+        val localst = st.bornChild()
 
-        val cond = interpretNoInterrupt(node.condition, localRef).obj
+        val cond = interpretNoInterrupt(node.condition, localst).obj
         if (cond.boolVal) {
-            return interpret(node.action, localRef)
+            return interpret(node.action, localst)
         }
 
         for ((elifCondNode, elifActionNode) in node.elif) {
-            val elifCond = interpretNoInterrupt(elifCondNode, localRef).obj
+            val elifCond = interpretNoInterrupt(elifCondNode, localst).obj
             if (elifCond.boolVal) {
-                return interpret(elifActionNode, localRef)
+                return interpret(elifActionNode, localst)
             }
         }
 
         if (node.elseAction != null) {
-            return interpret(node.elseAction, localRef)
+            return interpret(node.elseAction, localst)
         }
 
         return InterpretResult(NullObj(node.startPos, node.endPos))
     }
 
     // TODO: Add for loop
-    private fun interpretLoop(node: LoopNode, globalRef: Referables): InterpretResult {
-        val ref = globalRef.bornChild()
+    private fun interpretLoop(node: LoopNode, globalst: SymbolTable): InterpretResult {
+        val st = globalst.bornChild()
         var finalObj: BaseObject = NullObj(node.startPos, node.endPos)
 
         var complete = true
         if (node.loopTokenType == WHILE) {
-            var cond = interpretNoInterrupt(node.condition, ref).obj
+            var cond = interpretNoInterrupt(node.condition, st).obj
 
             while (cond.boolVal) {
-                val res = interpret(node.mainAction, ref)
+                val res = interpret(node.mainAction, st)
                 if (res.interrupt == BREAK) {
                     complete = false
                     res.clearInterrupt()  // just in case; not really useful for now
@@ -232,83 +232,83 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
                     return res
                 }
                 finalObj = res.obj
-                cond = interpretNoInterrupt(node.condition, ref).obj
+                cond = interpretNoInterrupt(node.condition, st).obj
             }
 
 //        } else if (node.loopTokenType == FOR) {
 //            if (node.condition !is ArgumentsNode) throw NotYourFaultError("Invalid for loop in the condition", node.startPos, node.endPos)
 //            val variable = node.condition.args[0]
-//            val iterable = interpretNoInterrupt(node.condition.args[1], ref).obj
+//            val iterable = interpretNoInterrupt(node.condition.args[1], st).obj
 
         } else throw NotYourFaultError("Unknown loop token type: ${node.loopTokenType}", node.startPos, node.endPos)
 
         if (complete) {
-            val compRes = interpret(node.compAction ?: NullNode(node.startPos, node.endPos), ref).also { if (it.interrupt != null) return it }
+            val compRes = interpret(node.compAction ?: NullNode(node.startPos, node.endPos), st).also { if (it.interrupt != null) return it }
             if (compRes.hasObject) finalObj = compRes.obj
         } else {
-            val incompRes = interpret(node.incompAction ?: NullNode(node.startPos, node.endPos), ref).also { if (it.interrupt != null) return it }
+            val incompRes = interpret(node.incompAction ?: NullNode(node.startPos, node.endPos), st).also { if (it.interrupt != null) return it }
             if (incompRes.hasObject) finalObj = incompRes.obj
         }
 
         return InterpretResult(finalObj)
     }
 
-    private fun interpretProcedural(node: ProcedureNode, ref: Referables): InterpretResult {
+    private fun interpretProcedural(node: ProcedureNode, st: SymbolTable): InterpretResult {
         var finalObj: BaseObject = NullObj(node.startPos, node.endPos)
         for (procedure in node.procedures) {
-            finalObj = interpret(procedure, ref).also { if (it.interrupt != null) return it }.obj
+            finalObj = interpret(procedure, st).also { if (it.interrupt != null) return it }.obj
         }
         return InterpretResult(finalObj)
     }
 
-    private fun interpretFuncCreation(node: FuncNode, ref: Referables): InterpretResult {
+    private fun interpretFuncCreation(node: FuncNode, st: SymbolTable): InterpretResult {
         val obj = FuncObj(node)
-        ref.set(node.name.value, obj, false)
+        st.set(node.name.value, obj, false)
         return InterpretResult(obj)
     }
 
-    private fun interpretFunc(node: FuncNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): InterpretResult {
-        val params = node.params.map { convertParamNode(it, ref) }
-        setParams(params, args, kwargs, ref, startPos, endPos)
-        val res = interpret(node.body, ref)
+    private fun interpretFunc(node: FuncNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, st: SymbolTable, startPos: Position, endPos: Position): InterpretResult {
+        val params = node.params.map { convertParamNode(it, st) }
+        setParams(params, args, kwargs, st, startPos, endPos)
+        val res = interpret(node.body, st)
         return res.clearInterrupt()  // remove possible return interrupt
     }
 
-    private fun interpretBultinFunc(obj: BuiltinFunc, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): InterpretResult {  // BuiltinFunc doesn't have positional information
-        setParams(obj.parameters, args, kwargs, ref, startPos, endPos)
-        return InterpretResult(obj(ref, startPos, endPos))
+    private fun interpretBultinFunc(obj: BuiltinFunc, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, st: SymbolTable, startPos: Position, endPos: Position): InterpretResult {  // BuiltinFunc doesn't have positional information
+        setParams(obj.parameters, args, kwargs, st, startPos, endPos)
+        return InterpretResult(obj(st, startPos, endPos))
     }
 
-    private fun interpretClassCreation(node: ClassNode, ref: Referables): InterpretResult {
+    private fun interpretClassCreation(node: ClassNode, st: SymbolTable): InterpretResult {
         val obj = ClassObj(node)
-        ref.set(node.name.value, obj, false)
+        st.set(node.name.value, obj, false)
         return InterpretResult(obj)
     }
 
-    private fun interpretClass(node: ClassNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): InterpretResult {
-        val thisRef = setParams(node.initParams.map { convertParamNode(it, ref) }, args, kwargs, ref, startPos, endPos)
+    private fun interpretClass(node: ClassNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, st: SymbolTable, startPos: Position, endPos: Position): InterpretResult {
+        val thisst = setParams(node.initParams.map { convertParamNode(it, st) }, args, kwargs, st, startPos, endPos)
 
         // inheritance
         node.parent?.let {
-            val parent = interpretNoInterrupt(it, thisRef).obj
-            thisRef.set("that", parent, false)
+            val parent = interpretNoInterrupt(it, thisst).obj
+            thisst.set("that", parent, false)
         }
 
         // set class methods, constants, etc. and does the init work
-        interpretNoInterrupt(node.body, thisRef)
-        val thisObj = CustomObj(node.name.value, thisRef, node.startPos, node.endPos)
-        thisRef.set("this", thisObj, false)
+        interpretNoInterrupt(node.body, thisst)
+        val thisObj = CustomObj(node.name.value, thisst, node.startPos, node.endPos)
+        thisst.set("this", thisObj, false)
 
         return InterpretResult(thisObj)
     }
 
-    private fun convertParamNode(node: ParamNode, ref: Referables): Parameter {
+    private fun convertParamNode(node: ParamNode, st: SymbolTable): Parameter {
         val type = node.type?.name
-        val default = node.default?.let { interpret(node.default, ref).obj }
+        val default = node.default?.let { interpret(node.default, st).obj }
         return Parameter(node.name, type, default, node.variable, node.kwvariable)
     }
 
-    private fun setParams(params: List<Parameter>, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): Referables {
+    private fun setParams(params: List<Parameter>, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, st: SymbolTable, startPos: Position, endPos: Position): SymbolTable {
         val varArg = params.find { it.variable }
         val varKwarg = params.find { it.kwvariable }
 
@@ -320,45 +320,45 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             val varArgsIndex = params.indexOf(varArg)
 
             // first part of arguments
-            args.subList(0, varArgsIndex).forEachIndexed { i, it ->  ref.set(params[i].name, interpret(it, ref).obj, false) }
+            args.subList(0, varArgsIndex).forEachIndexed { i, it ->  st.set(params[i].name, interpret(it, st).obj, false) }
 
             // variable arguments
             val argvEnd = args.size - argParamNumber + varArgsIndex
-            val argv = args.subList(varArgsIndex, argvEnd).map { interpret(it, ref).obj }
-            ref.set(varArg.name, ListObj(argv, startPos, endPos), false)
+            val argv = args.subList(varArgsIndex, argvEnd).map { interpret(it, st).obj }
+            st.set(varArg.name, ListObj(argv, startPos, endPos), false)
 
             // last part of arguments
-            args.subList(argvEnd, args.size).forEachIndexed { i, it ->  ref.set(params[i + varArgsIndex + 1].name, interpret(it, ref).obj, false) }
+            args.subList(argvEnd, args.size).forEachIndexed { i, it ->  st.set(params[i + varArgsIndex + 1].name, interpret(it, st).obj, false) }
         } else {
             if (args.size > params.size) throw TypeError("Too many arguments", startPos, endPos)
-            args.forEachIndexed { i, it ->  ref.set(params[i].name, interpret(it, ref).obj, false)}
+            args.forEachIndexed { i, it ->  st.set(params[i].name, interpret(it, st).obj, false)}
         }
 
         // keyword arguments
         if (varKwarg != null) {
             // normal keyword arguments
-            kwargs.filter { it.key.value in params.map { param -> param.name } - varKwarg.name }.forEach { ref.set(it.key.value, interpret(it.value, ref).obj, false) }
+            kwargs.filter { it.key.value in params.map { param -> param.name } - varKwarg.name }.forEach { st.set(it.key.value, interpret(it.value, st).obj, false) }
 
             // variable kw arguments
             val kwargMap = mutableMapOf<String, BaseObject>()
-            kwargs.filter { it.key.value !in params.map { param -> param.name } - varKwarg.name }.forEach { kwargMap[it.key.value] = interpret(it.value, ref).obj }
-            ref.set(varKwarg.name, MapObj(kwargMap, startPos, endPos), false)
+            kwargs.filter { it.key.value !in params.map { param -> param.name } - varKwarg.name }.forEach { kwargMap[it.key.value] = interpret(it.value, st).obj }
+            st.set(varKwarg.name, MapObj(kwargMap, startPos, endPos), false)
         } else {
-            kwargs.forEach { ref.set(it.key.value, interpret(it.value, ref).obj, false) }
+            kwargs.forEach { st.set(it.key.value, interpret(it.value, st).obj, false) }
         }
 
         // check for any missing
         for (param in params) {
-            if (ref.contain(param.name)) continue
-            if (param.default != null) ref.set(param.name, param.default, false)
+            if (st.contain(param.name)) continue
+            if (param.default != null) st.set(param.name, param.default, false)
             else throw TypeError("Missing argument: ${param.name}", startPos, endPos)
         }
 
-        return ref
+        return st
     }
 
-    private fun interpretPropAccess(node: PropAccessNode, ref: Referables): InterpretResult {
-        val obj = interpretNoInterrupt(node.parent, ref).obj
+    private fun interpretPropAccess(node: PropAccessNode, st: SymbolTable): InterpretResult {
+        val obj = interpretNoInterrupt(node.parent, st).obj
 
         val prop = obj.property.getLocal(node.property.name)
             ?: obj.property.getLocal("that")?.property?.getLocal(node.property.name)  // class inheritance

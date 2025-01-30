@@ -1,12 +1,12 @@
 package vklang.interpret.`object`
 
-import vklang.interpret.Referables
+import vklang.interpret.SymbolTable
 import vklang.lex.Position
 import kotlin.math.pow
 
 class NumberObj(override val value: Float, override val startPos: Position, override val endPos: Position): BaseObject {
     override val type = "Number"
-    override val property = Referables(null, isRoot=false)
+    override val property = SymbolTable(null, isRoot=false)
     override val boolVal
         get() = value != 0f
 

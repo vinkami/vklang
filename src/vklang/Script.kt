@@ -2,7 +2,7 @@ package vklang
 
 import vklang.exception.BaseError
 import vklang.interpret.Interpreter
-import vklang.interpret.Referables
+import vklang.interpret.SymbolTable
 import vklang.lex.Lexer
 import vklang.lex.Token
 import vklang.parse.Parser
@@ -54,8 +54,8 @@ class Script {
         }
     }
 
-    fun interpret(ref: Referables): BaseError? {
+    fun interpret(st: SymbolTable): BaseError? {
         val node = parse().also { if (it.second != null) return it.second }.first!!
-        return Interpreter(node, ref).interpret()
+        return Interpreter(node, st).interpret()
     }
 }

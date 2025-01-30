@@ -1,13 +1,13 @@
 package vklang.exception
 
-import vklang.interpret.Referables
+import vklang.interpret.SymbolTable
 import vklang.interpret.`object`.BaseObject
 import vklang.lex.Position
 
 abstract class BaseLangException(message: String, override val startPos: Position, override val endPos: Position): BaseObject, Exception(message) {
     override val type = "Error"
     override val value = message
-    override val property = Referables(null, isRoot=false)
+    override val property = SymbolTable(null, isRoot=false)
     override val boolVal = true
 
     override fun toString(): String {

@@ -1,11 +1,11 @@
 package vklang.interpret.`object`
 
-import vklang.interpret.Referables
+import vklang.interpret.SymbolTable
 import vklang.lex.Position
 
 class BoolObj(override val value: Boolean, override val startPos: Position, override val endPos: Position): BaseObject {
     override val type = "Boolean"
-    override val property = Referables(null, isRoot=false)
+    override val property = SymbolTable(null, isRoot=false)
     override val boolVal
         get() = value
     val intObj

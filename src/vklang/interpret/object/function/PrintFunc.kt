@@ -1,7 +1,7 @@
 package vklang.interpret.`object`.function
 
 import vklang.exception.NotYourFaultError
-import vklang.interpret.Referables
+import vklang.interpret.SymbolTable
 import vklang.interpret.`object`.BaseObject
 import vklang.interpret.`object`.NullObj
 import vklang.interpret.`object`.StringObj
@@ -16,7 +16,7 @@ class PrintFunc: BuiltinFunc("print") {
         Parameter("s", null, StringObj("", startPos, endPos))
     )
 
-    override operator fun invoke(ref: Referables, startPos: Position, endPos: Position): BaseObject {
+    override operator fun invoke(ref: SymbolTable, startPos: Position, endPos: Position): BaseObject {
         val stdout = ref.stdout
         if (stdout != null) {
             stdout(ref.get("s").toString())

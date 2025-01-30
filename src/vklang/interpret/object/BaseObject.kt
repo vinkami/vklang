@@ -1,7 +1,7 @@
 package vklang.interpret.`object`
 
 import vklang.exception.SyntaxError
-import vklang.interpret.Referables
+import vklang.interpret.SymbolTable
 import vklang.lex.Position
 
 interface BaseObject {
@@ -9,7 +9,7 @@ interface BaseObject {
     val value: Any
     val startPos: Position
     val endPos: Position
-    val property: Referables
+    val property: SymbolTable
     val boolVal: Boolean
         get() = true
 

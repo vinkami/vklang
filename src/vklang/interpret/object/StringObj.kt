@@ -1,12 +1,12 @@
 package vklang.interpret.`object`
 
-import vklang.interpret.Referables
+import vklang.interpret.SymbolTable
 import vklang.lex.Position
 import kotlin.math.round
 
 class StringObj(override val value: String, override val startPos: Position, override val endPos: Position): BaseObject {
     override val type = "String"
-    override val property = Referables(null, isRoot=false)
+    override val property = SymbolTable(null, isRoot=false)
     override val boolVal
         get() = value.isNotEmpty()
     override fun toString() = value

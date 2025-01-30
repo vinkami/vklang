@@ -1,6 +1,6 @@
 package vklang.interpret.`object`.function
 
-import vklang.interpret.Referables
+import vklang.interpret.SymbolTable
 import vklang.interpret.`object`.BaseObject
 import vklang.interpret.`object`.StringObj
 import vklang.lex.Position
@@ -11,7 +11,7 @@ class TypeFunc: BuiltinFunc("type") {
 
     override val parameters = listOf(Parameter("obj", null, null))
 
-    override operator fun invoke(ref: Referables, startPos: Position, endPos: Position): BaseObject {
+    override operator fun invoke(ref: SymbolTable, startPos: Position, endPos: Position): BaseObject {
         return StringObj(ref.get("obj")!!.type, startPos, endPos)
     }
 }

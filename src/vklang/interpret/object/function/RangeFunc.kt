@@ -1,7 +1,7 @@
 package vklang.interpret.`object`.function
 
 import vklang.exception.TypeError
-import vklang.interpret.Referables
+import vklang.interpret.SymbolTable
 import vklang.interpret.`object`.BaseObject
 import vklang.interpret.`object`.ListObj
 import vklang.interpret.`object`.NullObj
@@ -21,7 +21,7 @@ class RangeFunc: BuiltinFunc("range") {
         Parameter("step", "Number", NumberObj(1f, startPos, endPos), true)
     )
 
-    override operator fun invoke(ref: Referables, startPos: Position, endPos: Position): BaseObject {
+    override operator fun invoke(ref: SymbolTable, startPos: Position, endPos: Position): BaseObject {
         val start = ref.get("start")
         val end = ref.get("end")
         val step = ref.get("step")
@@ -38,7 +38,6 @@ class RangeFunc: BuiltinFunc("range") {
                     i += step.value
                 }
                 return ListObj(list, startPos, endPos)
-
             }
 
             is NumberObj -> {
