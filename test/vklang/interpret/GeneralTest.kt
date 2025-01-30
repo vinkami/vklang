@@ -5,13 +5,6 @@ import org.junit.jupiter.api.Test
 
 class GeneralTest {
     @Test
-    fun testPrint() {
-        val (output, err) = run("print(\"Hello, world!\")")
-        assertNull(err)
-        assertEquals("Hello, world!\n", output)
-    }
-
-    @Test
     fun testMutability() {
         val (output, err) = run("""
             var x = 5
@@ -30,5 +23,22 @@ class GeneralTest {
             print(x)
         """.trimIndent())
         assertNotNull(err)
+    }
+
+    @Test
+    fun testLogic() {
+        val (output, err) = run("""
+            print(5 == 5)
+            print(5 != 6)
+            print(5 < 6)
+            print(5 <= 5)
+            print(5 > 4)
+            print(5 >= 4)
+            print(true & true)
+            print(true | false)
+            print(!(true & false))
+        """.trimIndent())
+        assertNull(err)
+        assertEquals("true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\n", output)
     }
 }
