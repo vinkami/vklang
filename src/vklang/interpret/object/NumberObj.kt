@@ -38,6 +38,11 @@ class NumberObj(override val value: Float, override val startPos: Position, over
         return super.divide(other)
     }
 
+    override fun mod(other: BaseObject): BaseObject {
+        if (other is NumberObj) return NumberObj(value % other.value, other.startPos, other.endPos)
+        return super.mod(other)
+    }
+
     override fun power(other: BaseObject): BaseObject {
         if (other is NumberObj) return NumberObj(value.pow(other.value), other.startPos, other.endPos)
         return super.power(other)
