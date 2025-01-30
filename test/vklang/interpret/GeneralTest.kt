@@ -41,4 +41,31 @@ class GeneralTest {
         assertNull(err)
         assertEquals("true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\n", output)
     }
+
+    @Test
+    fun testMath() {
+        val (output, err) = run("""
+            print(10 + 5)
+            print(10 - 5)
+            print(10 * 5)
+            print(10 / 5)
+            print(10 % 3)
+            print(10 ** 3)
+        """.trimIndent())
+        assertNull(err)
+        assertEquals("15.0\n5.0\n50.0\n2.0\n1.0\n1000.0\n", output)
+    }
+
+    @Test
+    fun testMathExpr() {
+        val (output, err) = run("""
+            print(10 + 5 * 2)
+            print((10 + 5) * 2)
+            print(2 * 10 + 5)
+            print(2 * (10 + 5))
+            print(3 * 2 + 5 ** (3 - 1))
+        """.trimIndent())
+        assertNull(err)
+        assertEquals("20.0\n30.0\n25.0\n30.0\n31.0\n", output)
+    }
 }
