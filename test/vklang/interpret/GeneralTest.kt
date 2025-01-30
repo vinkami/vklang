@@ -17,7 +17,7 @@ class GeneralTest {
     
     @Test
     fun testImmutability() {
-        val (output, err) = run("""
+        val (_, err) = run("""
             val x = 5
             x = 10
             print(x)
