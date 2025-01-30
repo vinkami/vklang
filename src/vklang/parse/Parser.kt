@@ -89,19 +89,29 @@ class Parser(private val tokens: List<Token>) {
         var node = uncheckedNode
         while (true) {
             if (pos == tokens.size - 1) break
-            if (tokens[pos+1].type == DOT) { // gets property
+            if (nextType == DOT) { // gets property
                 advance()
                 node = parseProp(node)
             }
-            else if (tokens[pos+1].type == L_PARAN) {  // makes call
-                val cpos = pos
+            else if (nextType == L_PARAN) {  // makes call
+                // Parantheses used for math expression is parsed in parseBracket()
                 advance()
-                val arguments = parseBracket()
-                if (arguments !is ArgumentsNode) {
-                    pos = cpos
-                    break
+                var paranCount = 1
+                val start = pos
+                val startToken = currentToken
+                while (paranCount > 0) {
+                    advance()
+                    val tt = currentType
+                    if (tt == EOF) throw SyntaxError("Script ended when expecting a )", currentStartPos, currentEndPos)
+                    else if (tt == L_PARAN) paranCount++
+                    else if (tt == R_PARAN) paranCount--
                 }
-                node.call = arguments
+
+                val endToken = currentToken
+                val eof = Token(EOF, "EOF", endToken.startPos, endToken.endPos)
+                val innerTokens = tokens.subList(start + 1, pos) + eof
+                val (args, kwargs) = Parser(innerTokens).generateArguments()
+                node.call = ArgumentsNode(args, kwargs, startToken.startPos, currentEndPos)
             }
             else break
         }
@@ -212,28 +222,24 @@ class Parser(private val tokens: List<Token>) {
         val innerTokens = tokens.subList(start + 1, pos) + eof
 
         return when (bracketTypeL) {
-            L_PARAN -> {
-                if (start == 0 || tokens[start - 1].type in listOf(PLUS, MINUS, SPACE, LINEBREAK)) {  // parse as if it's a part of math expr
-                    val innerResult = Parser(innerTokens).parse()
-                    val node = BracketNode(startToken, innerResult, endToken)
-                    processBinOp(0, node)  // Try to continue parsing the bracket as a binop, return itself if not anyway
-                } else {  // parse as a list of arguments
-                    val (args, kwargs) = Parser(innerTokens).generateArguments()
-                    ArgumentsNode(args, kwargs, startToken.startPos, currentEndPos)
-                }
+            L_PARAN -> { // math expression
+                // Parentheses used for function call (arguments) is parsed in checkCallGet()
+                val innerResult = Parser(innerTokens).parse()
+                val node = BracketNode(startToken, innerResult, endToken)
+                checkCallGet(processBinOp(0, node))  // Try to continue parsing the bracket as a binop, return itself if not anyway
             }
 
             L_BRAC -> {  // lua table
                 val (args, kwargs) = Parser(innerTokens).generateArguments()
                 if (args.isNotEmpty() && kwargs.isNotEmpty()) throw SyntaxError("Table type unsure", startPos, currentEndPos)
 
-                if (kwargs.isEmpty()) ListNode(args, startToken.startPos, currentEndPos)  // both empty -> empty list
-                else DictNode(kwargs, startToken.startPos, currentEndPos)
+                if (kwargs.isEmpty()) checkCallGet(ListNode(args, startToken.startPos, currentEndPos))  // both empty -> empty list
+                else checkCallGet(DictNode(kwargs, startToken.startPos, currentEndPos))
             }
 
-            L_BRACE -> {
+            L_BRACE -> {  // code block
                 val innerResult = Parser(innerTokens).parse()
-                BracketNode(startToken, innerResult, endToken)
+                checkCallGet(BracketNode(startToken, innerResult, endToken))
             }
 
             else -> throw NotYourFaultError("parseBracket() check got bypassed with illegal bracket type $bracketTypeL", currentStartPos, currentEndPos)
@@ -492,7 +498,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseProp(node: BaseNode): PropAccessNode {
         if (currentType != DOT) throw NotYourFaultError("Not accessing property with a .", currentStartPos, currentEndPos)
-        advance()
+        ass()
         if (currentType != IDENTIFIER) throw SyntaxError("Expected property name after .", currentStartPos, currentEndPos)
         val prop = parseIden()
 
