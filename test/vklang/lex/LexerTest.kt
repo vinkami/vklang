@@ -24,11 +24,11 @@ class LexerTest {
 
     @Test
     fun string() {
-        val text = "\"Hello world!\""
+        val text = "\"Hello, world!\""
         val actual: List<Token> = Lexer(text, fileName).tokenize()
         val expected = listOf(
-            Token(TokenType.STRING, "Hello world!", Position(0, 0, 0, fileName, text), Position(14, 0, 14, fileName, text)),
-            Token(TokenType.EOF, "", Position(15, 0, 15, fileName, text), Position(15, 0, 15, fileName, text))
+            Token(TokenType.STRING, "Hello, world!", Position(0, 0, 0, fileName, text), Position(15, 0, 15, fileName, text)),
+            Token(TokenType.EOF, "", Position(16, 0, 16, fileName, text), Position(16, 0, 16, fileName, text))
         )
 
         compareTokens(expected, actual, "String tokenization failed")
