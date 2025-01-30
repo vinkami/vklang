@@ -15,8 +15,6 @@ This project is separated from the Minecraft plugin [VinkamiLang](https://github
         print("a is 2")
     } else {  # Else statement
         print("a is not 1 nor 2")
-    } else {
-        print("a is not 1")
     }
     ? (b == 2) {  # If statement but with symbols. Both are equivalent and interchangeable
         print("b is 2")
@@ -26,20 +24,19 @@ This project is separated from the Minecraft plugin [VinkamiLang](https://github
         print("b is neither 2 nor 3")
     }
     
-    while (a < 5) {  # While loop
-        print(a)
-        a += 1
+    while (b < 5) {  # While loop
+        b += 1
     } complete {  # Complete block. This block will be executed after the loop is finished without breaking
-        print("a is now 5")
+        print("b is now 5")
     }
     
-    while (b < 5) {
-        print(b)
+    while (b < 10) {
         b += 1
-        if (b == 3) {
+        if (b == 8) {
+            print("b is 8 now")
             break  # Break statement
         }
     } incomplete {  # Incomplete block. This block will be executed after the loop is broken
-        print("b is not 5")
+        print("b is not 10")
     }
 ```
