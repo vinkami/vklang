@@ -66,8 +66,10 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseOnce(): BaseNode {
         var currentProcedure = when (currentType) {
-            NUMBER, IDENTIFIER, TRUE, FALSE -> parseBinOp(0)
+            NUMBER -> NumberNode(currentToken)
             STRING -> StringNode(currentToken)
+            IDENTIFIER -> parseIden()
+            TRUE, FALSE -> BoolNode(currentToken)
             PLUS, MINUS, NOT -> parseUnaryOp()
             VAR, VAL -> parseAssign()
             in Constant.bracket.keys -> parseBracket()
@@ -80,90 +82,75 @@ class Parser(private val tokens: List<Token>) {
             else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
         }
 
-        currentProcedure = checkCallGet(currentProcedure)
+        currentProcedure = checkObjFollower(currentProcedure)
 
         return currentProcedure
     }
 
-    private fun checkCallGet(uncheckedNode: BaseNode): BaseNode {
-        var node = uncheckedNode
-        while (true) {
-            if (pos == tokens.size - 1) break
-            if (nextType == DOT) { // gets property
-                advance()
-                node = parseProp(node)
-            }
-            else if (nextType == L_PARAN) {  // makes call
-                // Parantheses used for math expression is parsed in parseBracket()
-                advance()
-                var paranCount = 1
-                val start = pos
-                val startToken = currentToken
-                while (paranCount > 0) {
-                    advance()
-                    val tt = currentType
-                    if (tt == EOF) throw SyntaxError("Script ended when expecting a )", currentStartPos, currentEndPos)
-                    else if (tt == L_PARAN) paranCount++
-                    else if (tt == R_PARAN) paranCount--
-                }
+    private fun checkObjFollower(node: BaseNode): BaseNode {
+        return processBinOp(0, node)
+    }
 
-                val endToken = currentToken
-                val eof = Token(EOF, "EOF", endToken.startPos, endToken.endPos)
-                val innerTokens = tokens.subList(start + 1, pos) + eof
-                val (args, kwargs) = Parser(innerTokens).generateArguments()
-                node.call = ArgumentsNode(args, kwargs, startToken.startPos, currentEndPos)
-            }
-            else break
+    private fun handleCall(node: BaseNode): BaseNode {
+        // Parantheses used for math expression is parsed in parseBracket()
+        var paranCount = 1
+        val start = pos
+        val startToken = currentToken
+        while (paranCount > 0) {
+            ass()
+            val tt = currentType
+            if (tt == EOF) throw SyntaxError("Script ended when expecting a )", currentStartPos, currentEndPos)
+            else if (tt == L_PARAN) paranCount++
+            else if (tt == R_PARAN) paranCount--
         }
+
+        val endToken = currentToken
+        val eof = Token(EOF, "EOF", endToken.startPos, endToken.endPos)
+        val innerTokens = tokens.subList(start + 1, pos) + eof
+        val (args, kwargs) = Parser(innerTokens).generateArguments()
+        node.call = ArgumentsNode(args, kwargs, startToken.startPos, currentEndPos)
         return node
     }
 
     /**
-     * Binary Operations
-     * i.e. + - * / % ** == != < > <= >= and stuff like that
+     * Pratt parsing
+     * Used by parseBracket() and checkCallGet() so it's broken down into a separate function
+     * There's no parseBinOp because any binary operation must be started from an object and will be checked by checkCallGet()
      *
      * @param minBP Minimum binding power; should be 0 when called from outside and varies according to Constant.bindingPower when called by processBinOp()
-     */
-    private fun parseBinOp(minBP: Int): BaseNode {
-        if (minBP != 0) advance()
-        skipSpace()
-
-        var lhs: BaseNode = when (currentType) {
-            L_PARAN -> parseBracket()
-            NUMBER -> NumberNode(currentToken)
-            IDENTIFIER -> parseIden()
-            TRUE, FALSE -> BoolNode(currentToken)
-            PLUS, MINUS, NOT -> parseUnaryOp()
-            else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
-        }
-
-        lhs = checkCallGet(lhs)
-
-        return processBinOp(minBP, lhs)
-    }
-
-    /**
-     * Actual Pratt parsing part of parseBinOp()
-     * Used by parseBracket() and parseBinOp() so it's broken down into a separate function
-     *
-     * @param minBP see parseBinOp()
      * @param currentNode the node to start parsing at
      */
     private fun processBinOp(minBP: Int, currentNode: BaseNode): BaseNode {
         var lhs = currentNode
+        while (nextType in Constant.binaryOps) {
+            if (pos == tokens.size - 1) break
+            if (nextType == DOT) {  // access property
+                ass()
+                lhs = parseProp(lhs)
+                continue
+            } else if (nextType == L_PARAN) {  // make call
+                ass()
+                lhs = handleCall(lhs)
+                continue
+            }
 
-        while (true) {
-            val op = nextNonSpaceToken
-            if (op.type !in Constant.binaryOps) break
-
-            val (leftBP, rightBP) = Constant.bindingPower[op.type]!!
+            val (leftBP, rightBP) = Constant.bindingPower[nextType]!!
             if (leftBP < minBP) break
-            ass()
+            val op = nextNonSpaceToken
+            ass(2)
 
-            val rhs = checkCallGet(parseBinOp(rightBP))
+            var rhs = when (currentType) {
+                L_PARAN, L_BRAC -> parseBracket()
+                NUMBER -> NumberNode(currentToken)
+                STRING -> StringNode(currentToken)
+                IDENTIFIER -> parseIden()
+                TRUE, FALSE -> BoolNode(currentToken)
+                PLUS, MINUS, NOT -> parseUnaryOp()
+                else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
+            }
+            rhs = processBinOp(rightBP, processBinOp(rightBP, rhs))
             lhs = BinOpNode(lhs, op, rhs)
         }
-
         return lhs
     }
 
@@ -171,7 +158,6 @@ class Parser(private val tokens: List<Token>) {
         val op = currentToken
         ass()
         val inner = parseOnce()
-//        val inner = parseExprOnce()
         return processBinOp(0, UnaryOpNode(op, inner))  // unary node may be a part of math expression
     }
 
@@ -221,29 +207,30 @@ class Parser(private val tokens: List<Token>) {
         val eof = Token(EOF, "EOF", endToken.startPos, endToken.endPos)
         val innerTokens = tokens.subList(start + 1, pos) + eof
 
-        return when (bracketTypeL) {
+        val node = when (bracketTypeL) {
             L_PARAN -> { // math expression
                 // Parentheses used for function call (arguments) is parsed in checkCallGet()
                 val innerResult = Parser(innerTokens).parse()
                 val node = BracketNode(startToken, innerResult, endToken)
-                checkCallGet(processBinOp(0, node))  // Try to continue parsing the bracket as a binop, return itself if not anyway
+                processBinOp(0, node)  // Try to continue parsing the bracket as a binop, return itself if not anyway
             }
 
             L_BRAC -> {  // lua table
                 val (args, kwargs) = Parser(innerTokens).generateArguments()
                 if (args.isNotEmpty() && kwargs.isNotEmpty()) throw SyntaxError("Table type unsure", startPos, currentEndPos)
 
-                if (kwargs.isEmpty()) checkCallGet(ListNode(args, startToken.startPos, currentEndPos))  // both empty -> empty list
-                else checkCallGet(DictNode(kwargs, startToken.startPos, currentEndPos))
+                if (kwargs.isEmpty()) ListNode(args, startToken.startPos, currentEndPos)  // both empty -> empty list
+                else DictNode(kwargs, startToken.startPos, currentEndPos)
             }
 
             L_BRACE -> {  // code block
                 val innerResult = Parser(innerTokens).parse()
-                checkCallGet(BracketNode(startToken, innerResult, endToken))
+                BracketNode(startToken, innerResult, endToken)
             }
 
             else -> throw NotYourFaultError("parseBracket() check got bypassed with illegal bracket type $bracketTypeL", currentStartPos, currentEndPos)
         }
+        return checkObjFollower(node)
     }
 
     private fun generateArguments(): Pair<List<BaseNode>, Map<Token, BaseNode>> {

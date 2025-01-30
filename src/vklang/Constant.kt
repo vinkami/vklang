@@ -33,7 +33,7 @@ internal object Constant {
         AND, OR, NOT,
     )
 
-    val binaryOps: List<TokenType> = arithmeticOp + comparativeOp + definitiveOp + logicalOp - listOf(NOT)
+    val binaryOps: List<TokenType> = arithmeticOp + comparativeOp + definitiveOp + logicalOp - listOf(NOT) + listOf(DOT, L_PARAN)
 
     val bracket: Map<TokenType, TokenType> = mapOf(
         L_PARAN to R_PARAN,
@@ -152,6 +152,7 @@ internal object Constant {
         Pair(LINEBREAK, LINEBREAK) to Pair(LINEBREAK) { t1, t2 -> t1.value + t2.value },
 
         Pair(OR, QUESTION) to Pair(ELIF) { _, _ -> "|?" },
+        Pair(OR, OR) to Pair(ELSE) { _, _ -> "||" },
     )
 
     val loopCompleteTT: List<TokenType> = listOf(
