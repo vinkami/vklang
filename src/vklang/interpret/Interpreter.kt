@@ -10,10 +10,10 @@ import vklang.lex.Token
 import vklang.lex.TokenType.*
 import vklang.parse.node.*
 
-class Interpreter(private val globalNode: BaseNode, private val globalst: SymbolTable) {
+class Interpreter(private val globalNode: BaseNode, private val globalSt: SymbolTable) {
     fun interpret(): BaseError? {
         try {
-            interpret(globalNode, globalst)
+            interpret(globalNode, globalSt)
         } catch (e: BaseError) {
             return e
         }
