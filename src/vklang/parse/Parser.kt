@@ -100,8 +100,8 @@ class Parser(private val tokens: List<Token>) {
             ass()
             val tt = currentType
             if (tt == EOF) throw SyntaxError("Script ended when expecting a )", currentStartPos, currentEndPos)
-            else if (tt == L_PARAN) paranCount++
-            else if (tt == R_PARAN) paranCount--
+            else if (tt == L_PAREN) paranCount++
+            else if (tt == R_PAREN) paranCount--
         }
 
         val endToken = currentToken
@@ -128,7 +128,7 @@ class Parser(private val tokens: List<Token>) {
                 ass()
                 lhs = parseProp(lhs)
                 continue
-            } else if (nextType == L_PARAN) {  // make call
+            } else if (nextType == L_PAREN) {  // make call
                 ass()
                 lhs = handleCall(lhs)
                 continue
@@ -140,7 +140,7 @@ class Parser(private val tokens: List<Token>) {
             ass(2)
 
             var rhs = when (currentType) {
-                L_PARAN, L_BRAC -> parseBracket()
+                L_PAREN, L_BRACKET -> parseBracket()
                 NUMBER -> NumberNode(currentToken)
                 STRING -> StringNode(currentToken)
                 IDENTIFIER -> parseIden()
@@ -208,14 +208,14 @@ class Parser(private val tokens: List<Token>) {
         val innerTokens = tokens.subList(start + 1, pos) + eof
 
         val node = when (bracketTypeL) {
-            L_PARAN -> { // math expression
+            L_PAREN -> { // math expression
                 // Parentheses used for function call (arguments) is parsed in checkCallGet()
                 val innerResult = Parser(innerTokens).parse()
                 val node = BracketNode(startToken, innerResult, endToken)
                 processBinOp(0, node)  // Try to continue parsing the bracket as a binop, return itself if not anyway
             }
 
-            L_BRAC -> {  // lua table
+            L_BRACKET -> {  // lua table
                 val (args, kwargs) = Parser(innerTokens).generateArguments()
                 if (args.isNotEmpty() && kwargs.isNotEmpty()) throw SyntaxError("Table type unsure", startPos, currentEndPos)
 
@@ -307,7 +307,7 @@ class Parser(private val tokens: List<Token>) {
             condition = parseBracket()
         } else if (loopTT == FOR) {
             val argStartPos = currentStartPos
-            val hasParen = currentType == L_PARAN
+            val hasParen = currentType == L_PAREN
             if (hasParen) ass()
             if (currentType != IDENTIFIER) throw SyntaxError("First argument of a for loop should be an identifier", currentStartPos, currentEndPos)
             val variable = parseIden()
@@ -320,10 +320,10 @@ class Parser(private val tokens: List<Token>) {
             ass()
 
             if (hasParen) {
-                if (currentType != R_PARAN) throw SyntaxError("Parentheses should come in pairs", currentStartPos, currentEndPos)
+                if (currentType != R_PAREN) throw SyntaxError("Parentheses should come in pairs", currentStartPos, currentEndPos)
                 ass()
             }
-            if (currentType == R_PARAN) throw SyntaxError("Parentheses should come in pairs", currentStartPos, currentEndPos)
+            if (currentType == R_PAREN) throw SyntaxError("Parentheses should come in pairs", currentStartPos, currentEndPos)
 
             condition = ArgumentsNode(listOf(variable, iterable), mapOf(), argStartPos, currentEndPos)
         }
@@ -372,9 +372,9 @@ class Parser(private val tokens: List<Token>) {
         val name = currentToken
         ass()
 
-        if (currentType != L_PARAN) throw SyntaxError("Expected ( after function name", currentStartPos, currentEndPos)
+        if (currentType != L_PAREN) throw SyntaxError("Expected ( after function name", currentStartPos, currentEndPos)
 
-        if (nextType != R_PARAN) {
+        if (nextType != R_PAREN) {
             // Has params
             ass()
             params = generateParams()
@@ -407,14 +407,14 @@ class Parser(private val tokens: List<Token>) {
         ass()
 
         // has constructor params
-        if (currentType == L_PARAN) {
+        if (currentType == L_PAREN) {
             ass()
             if (currentType == IDENTIFIER) {
                 params = generateParams()
 
-                if (nextType != R_PARAN) throw SyntaxError("Unclosed bracket", currentStartPos, currentEndPos)
+                if (nextType != R_PAREN) throw SyntaxError("Unclosed bracket", currentStartPos, currentEndPos)
                 ass(2)
-            } else if (currentType != R_PARAN) throw SyntaxError("Unclosed bracket", currentStartPos, currentEndPos)
+            } else if (currentType != R_PAREN) throw SyntaxError("Unclosed bracket", currentStartPos, currentEndPos)
             else ass()  // skip useless R_PARAN
 
             paramCheck(params)

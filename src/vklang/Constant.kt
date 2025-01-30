@@ -33,20 +33,20 @@ internal object Constant {
         AND, OR, NOT,
     )
 
-    val binaryOps: List<TokenType> = arithmeticOp + comparativeOp + definitiveOp + logicalOp - listOf(NOT) + listOf(DOT, L_PARAN)
+    val binaryOps: List<TokenType> = arithmeticOp + comparativeOp + definitiveOp + logicalOp - listOf(NOT) + listOf(DOT, L_PAREN)
 
     val bracket: Map<TokenType, TokenType> = mapOf(
-        L_PARAN to R_PARAN,
-        L_BRAC to R_BRAC,
+        L_PAREN to R_PAREN,
+        L_BRACKET to R_BRACKET,
         L_BRACE to R_BRACE,
     )
 
     val fixValuedTokenPair: Map<String, TokenType> = mapOf(
         // Key char
-        "(" to L_PARAN,
-        ")" to R_PARAN,
-        "[" to L_BRAC,
-        "]" to R_BRAC,
+        "(" to L_PAREN,
+        ")" to R_PAREN,
+        "[" to L_BRACKET,
+        "]" to R_BRACKET,
         "{" to L_BRACE,
         "}" to R_BRACE,
         "," to COMMA,
