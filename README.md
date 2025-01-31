@@ -5,28 +5,21 @@ This project is separated from the Minecraft plugin [VinkamiLang](https://github
 
 ## Syntax
 ```vklang
-    val a = 1  # Assign an immutable value
-    var b = 2  # Assign a mutable variable
-    b = 3      # Reassign a new value to a variable
+    val a = 1  // Assign an immutable value
+    var b = 2  // Assign a mutable variable
+    b = 3      // Reassign a new value to a variable
     
-    if (a == 1) {  # If statement. Parentheses and braces are required
-        print("a is 1")  # Print function
-    } elif (a == 2) {  # Else if statement
+    if (a == 1) {  // If statement. Parentheses and braces are required
+        print("a is 1")  // Print function
+    } elif (a == 2) {  // Else if statement
         print("a is 2")
-    } else {  # Else statement
+    } else {  // Else statement
         print("a is not 1 nor 2")
     }
-    ? (b == 2) {  # If statement but with symbols. Both are equivalent and interchangeable
-        print("b is 2")
-    } |? (b == 3) {
-        print("b is 3")
-    } || {
-        print("b is neither 2 nor 3")
-    }
     
-    while (b < 5) {  # While loop
+    while (b < 5) {  // While loop
         b += 1
-    } complete {  # Complete block. This block will be executed after the loop is finished without breaking
+    } complete {  // Complete block. This block will be executed after the loop is finished without breaking
         print("b is now 5")
     }
     
@@ -34,9 +27,39 @@ This project is separated from the Minecraft plugin [VinkamiLang](https://github
         b += 1
         if (b == 8) {
             print("b is 8 now")
-            break  # Break statement
+            break  // Break statement
         }
-    } incomplete {  # Incomplete block. This block will be executed after the loop is broken
+    } incomplete {  // Incomplete block. This block will be executed after the loop is broken
+        print("b is not 10")
+    }
+```
+Exact same code, but with symbols instead of keywords:
+```vklang
+    $!a = 1  // val
+    $b = 2  // var
+    b = 3
+    
+    ?? (a == 1) {  // if 
+        print("a is 1")  
+    } |? (a == 2) {  // elif
+        print("a is 2")
+    } || {  // else
+        print("a is not 1 nor 2")
+    }
+    
+    ?^ (b < 5) {  // while
+        b += 1
+    } ?+ {  // complete 
+        print("b is now 5")
+    }
+    
+    ?^ (b < 10) {  // while
+        b += 1
+        ?? (b == 8) {  // if
+            print("b is 8 now")
+            #<  // break
+        }
+    } ?- {  // incomplete
         print("b is not 10")
     }
 ```
