@@ -71,7 +71,7 @@ class Parser(private val tokens: List<Token>) {
             IDENTIFIER -> parseIden()
             TRUE, FALSE -> BoolNode(currentToken)
             PLUS, MINUS, NOT -> parseUnaryOp()
-            VAR, VAL -> parseAssign()
+            VAR, VAL, DOLLAR -> parseAssign()
             in Constant.bracket.keys -> parseBracket()
             IF -> parseIf()
             WHILE, FOR -> parseLoop()
@@ -166,7 +166,7 @@ class Parser(private val tokens: List<Token>) {
     private fun parseAssign(): AssignNode {
         val startPos = currentStartPos
 
-        val mutable = currentType == VAR
+        val mutable = currentType == VAR || currentType == DOLLAR
         ass()
 
         if (currentType != IDENTIFIER) throw SyntaxError("Expected identifier after var", currentStartPos, currentEndPos)
