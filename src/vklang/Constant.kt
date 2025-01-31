@@ -54,6 +54,7 @@ internal object Constant {
         ":" to COLON,
         ";" to SEMICOLON,
         "?" to QUESTION,
+        "#" to HASH,
 
         // Arithmetic operator
         "+" to PLUS,
@@ -129,7 +130,7 @@ internal object Constant {
 
     )
 
-    val conbinableTokens: Map<Pair<TokenType, TokenType>, Pair<TokenType, (Token, Token) -> String>> = mapOf(
+    val combinableTokens: Map<Pair<TokenType, TokenType>, Pair<TokenType, (Token, Token) -> String>> = mapOf(
 //        Pair(TokenType.PLUS, TokenType.PLUS) to Pair(TokenType.INCREMENT) { _, _ -> "++" },
         Pair(PLUS, ASSIGN) to Pair(PLUS_ASSIGN) { _, _ -> "+=" },
 
@@ -151,6 +152,7 @@ internal object Constant {
         Pair(SPACE, SPACE) to Pair(SPACE) { t1, t2 -> t1.value + t2.value },
         Pair(LINEBREAK, LINEBREAK) to Pair(LINEBREAK) { t1, t2 -> t1.value + t2.value },
 
+        Pair(QUESTION, QUESTION) to Pair(IF) { _, _ -> "??" },
         Pair(OR, QUESTION) to Pair(ELIF) { _, _ -> "|?" },
         Pair(OR, OR) to Pair(ELSE) { _, _ -> "||" },
     )

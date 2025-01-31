@@ -8,6 +8,8 @@ class Lexer(private val text: String, fileName: String) {
     private var pos = Position(-1, 0, -1, fileName, text)
     private val currentChar: String?  // Not Char? because Regex hates Char
         get() = if (pos.index < text.length) text[pos.index].toString() else null
+    private val nextChar: String?
+        get() = if (pos.index + 1 < text.length) text[pos.index + 1].toString() else null
 
     init {pos.advance(null)}
 
@@ -19,7 +21,7 @@ class Lexer(private val text: String, fileName: String) {
         while (currentChar != null) {
             val startPos = pos.copy()
 
-            if (currentChar == "#") {  // Comment
+            if (currentChar == "/" && nextChar == "/") {  // Comment
                 while (currentChar != null && currentChar != "\n") {
                     advance()
                 }
@@ -122,8 +124,8 @@ class Lexer(private val text: String, fileName: String) {
             }
             val nextToken = tokens[i + 1]
 
-            if (Constant.conbinableTokens.contains(currentToken.type to nextToken.type)) {
-                val procedure = Constant.conbinableTokens[currentToken.type to nextToken.type]!!
+            if (Constant.combinableTokens.contains(currentToken.type to nextToken.type)) {
+                val procedure = Constant.combinableTokens[currentToken.type to nextToken.type]!!
 
                 val newTT = procedure.first
                 val newValue = procedure.second(currentToken, nextToken)

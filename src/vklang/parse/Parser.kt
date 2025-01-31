@@ -73,7 +73,7 @@ class Parser(private val tokens: List<Token>) {
             PLUS, MINUS, NOT -> parseUnaryOp()
             VAR, VAL -> parseAssign()
             in Constant.bracket.keys -> parseBracket()
-            IF, QUESTION -> parseIf()
+            IF -> parseIf()
             WHILE, FOR -> parseLoop()
             BREAK, RETURN -> parseInterrupt()
             FUNC -> parseFuncDef()
