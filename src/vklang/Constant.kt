@@ -55,6 +55,10 @@ internal object Constant {
         ";" to SEMICOLON,
         "?" to QUESTION,
         "#" to HASH,
+        "^" to CARET,
+        "$" to DOLLAR,
+        "~" to TILDE,
+        "`" to GRAVE,
 
         // Arithmetic operator
         "+" to PLUS,
@@ -155,6 +159,16 @@ internal object Constant {
         Pair(QUESTION, QUESTION) to Pair(IF) { _, _ -> "??" },
         Pair(OR, QUESTION) to Pair(ELIF) { _, _ -> "|?" },
         Pair(OR, OR) to Pair(ELSE) { _, _ -> "||" },
+
+        Pair(QUESTION, CARET) to Pair(WHILE) { _, _ -> "?^" },
+        Pair(QUESTION, PLUS) to Pair(COMPLETE) { _, _ -> "?+" },
+        Pair(QUESTION, MINUS) to Pair(INCOMPLETE) { _, _ -> "?-" },
+
+        Pair(HASH, LESS) to Pair(BREAK) { _, _ -> "#<" },
+        Pair(HASH, GREATER) to Pair(CONTINUE) { _, _ -> "#>" },
+        Pair(HASH, CARET) to Pair(RETURN) { _, _ -> "#^" },
+
+        Pair(DOLLAR, NOT) to Pair(VAL) { _, _ -> "$!" },
     )
 
     val loopCompleteTT: List<TokenType> = listOf(
